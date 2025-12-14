@@ -19,7 +19,7 @@ After installation you need to **restart** Home-Assistant before using the integ
 ### Using HACS  
 
 If you dont' have [HACS](https://hacs.xyz) installed yet, I highly recommend it.  
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mudape&repository=iphonedetect&category=integration) or search for `iPhone Device Tracker`.
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=forrestsocool&repository=iphonedetect&category=integration) or search for `iPhone Device Tracker`.
 
 ### Manual  
 

@@ -11,7 +11,13 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Protocol, Sequence
 
 from homeassistant.util import dt as dt_util
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from pyroute2 import IPRoute
+import aiohttp
+import json
+import ssl
+
+from .const import DOMAIN, CONF_OPNSENSE_URL, CONF_OPNSENSE_KEY, CONF_OPNSENSE_SECRET
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -144,16 +150,87 @@ async def async_update_devices(hass: HomeAssistant, scanner: Scanner, devices: d
             device._last_seen = dt_util.utcnow()
 
 
+class ScannerOpnsense:
+    """Get ARP cache records from OPNsense API."""
+
+    def __init__(self, url: str, key: str, secret: str) -> None:
+        self.url = url
+        self.key = key
+        self.secret = secret
+
+    async def get_arp_records(self, hass: HomeAssistant) -> list[str]:
+        """Return list of IPv4 devices reachable by the network."""
+        response_ips = []
+        try:
+            session = async_get_clientsession(hass, verify_ssl=False)
+            auth = aiohttp.BasicAuth(self.key, self.secret)
+            async with session.get(self.url, auth=auth, timeout=10) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    # Parse OPNsense response
+                    # Format: {"rows": [{"mac": "...", "ip": "...", ...}, ...]}
+                    if "rows" in data:
+                        response_ips = [item["ip"] for item in data["rows"] if "ip" in item]
+                    else:
+                        _LOGGER.debug("OPNsense response missing 'rows' key: %s", data)
+                else:
+                    _LOGGER.debug("OPNsense API returned status: %s", response.status)
+
+        except Exception as exc:
+            _LOGGER.debug("Exception on OPNsense ARP lookup: %s", exc)
+
+        return response_ips
+
+
+class ScannerSmart:
+    """Scanner that tries OPNsense first, then falls back to local scanner."""
+
+    def __init__(self, primary_scanner: Scanner | None, fallback_scanner: Scanner) -> None:
+        self.primary_scanner = primary_scanner
+        self.fallback_scanner = fallback_scanner
+
+    async def get_arp_records(self, hass: HomeAssistant) -> list[str]:
+        """Return list of IPv4 devices reachable by the network."""
+        records = []
+        
+        if self.primary_scanner:
+            records = await self.primary_scanner.get_arp_records(hass)
+            if records:
+                return records
+            _LOGGER.debug("Primary scanner returned no records, falling back.")
+
+        return await self.fallback_scanner.get_arp_records(hass)
+
+
+
 async def async_get_scanner(hass: HomeAssistant) -> Scanner:
     """Return Scanner to use."""
+    local_scanner = None
 
     if await ScannerIPRoute().get_arp_records(hass):
-        return ScannerIPRoute()
+        local_scanner = ScannerIPRoute()
 
-    if await ScannerIPNeigh().get_arp_records():
-        return ScannerIPNeigh()
+    elif await ScannerIPNeigh().get_arp_records():
+        local_scanner = ScannerIPNeigh()
 
-    if await ScannerArp().get_arp_records():
-        return ScannerArp()
+    elif await ScannerArp().get_arp_records():
+        local_scanner = ScannerArp()
+    
+    if local_scanner is None:
+        raise ScannerException("No local scanner tool available")
 
-    raise ScannerException("No scanner tool available")
+    # Check for OPNsense config
+    opnsense_scanner = None
+    entries = hass.config_entries.async_entries(DOMAIN)
+    for entry in entries:
+        options = entry.options
+        if options.get(CONF_OPNSENSE_URL) and options.get(CONF_OPNSENSE_KEY) and options.get(CONF_OPNSENSE_SECRET):
+            opnsense_scanner = ScannerOpnsense(
+                options[CONF_OPNSENSE_URL],
+                options[CONF_OPNSENSE_KEY],
+                options[CONF_OPNSENSE_SECRET]
+            )
+            break
+            
+    return ScannerSmart(opnsense_scanner, local_scanner)
+

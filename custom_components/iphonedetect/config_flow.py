@@ -29,6 +29,9 @@ from homeassistant.util import slugify
 from .const import (
     DEFAULT_CONSIDER_HOME,
     DOMAIN,
+    CONF_OPNSENSE_URL,
+    CONF_OPNSENSE_KEY,
+    CONF_OPNSENSE_SECRET,
 )
 
 
@@ -47,6 +50,9 @@ DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_IP_ADDRESS, description={"suggested_value": "192.168.1.xx"}): str,
         **OPTIONS_SCHEMA.schema,
         vol.Optional("subnet_check", default=True): bool,
+        vol.Optional(CONF_OPNSENSE_URL): str,
+        vol.Optional(CONF_OPNSENSE_KEY): str,
+        vol.Optional(CONF_OPNSENSE_SECRET): str,
     }
 )
 
@@ -129,6 +135,9 @@ class IphoneDetectFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore
                     options={
                         CONF_IP_ADDRESS: user_input[CONF_IP_ADDRESS],
                         CONF_CONSIDER_HOME: user_input[CONF_CONSIDER_HOME],
+                        CONF_OPNSENSE_URL: user_input.get(CONF_OPNSENSE_URL),
+                        CONF_OPNSENSE_KEY: user_input.get(CONF_OPNSENSE_KEY),
+                        CONF_OPNSENSE_SECRET: user_input.get(CONF_OPNSENSE_SECRET),
                     },
                 )
 
@@ -154,6 +163,9 @@ class IphoneDetectFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore
             options={
                 CONF_IP_ADDRESS: import_config[CONF_IP_ADDRESS],
                 CONF_CONSIDER_HOME: import_config[CONF_CONSIDER_HOME],
+                CONF_OPNSENSE_URL: import_config.get(CONF_OPNSENSE_URL),
+                CONF_OPNSENSE_KEY: import_config.get(CONF_OPNSENSE_KEY),
+                CONF_OPNSENSE_SECRET: import_config.get(CONF_OPNSENSE_SECRET),
             },
         )
 
@@ -176,7 +188,13 @@ class IphoneDetectFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore
 
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=vol.Schema({vol.Required(CONF_IP_ADDRESS, default=entry.options[CONF_IP_ADDRESS]): str, vol.Optional("subnet_check", default=True): bool}),
+            data_schema=vol.Schema({
+                vol.Required(CONF_IP_ADDRESS, default=entry.options[CONF_IP_ADDRESS]): str,
+                vol.Optional("subnet_check", default=True): bool,
+                vol.Optional(CONF_OPNSENSE_URL, default=entry.options.get(CONF_OPNSENSE_URL)): str,
+                vol.Optional(CONF_OPNSENSE_KEY, default=entry.options.get(CONF_OPNSENSE_KEY)): str,
+                vol.Optional(CONF_OPNSENSE_SECRET, default=entry.options.get(CONF_OPNSENSE_SECRET)): str,
+            }),
             description_placeholders={"device_name": entry.title},
             errors=errors,
         )
