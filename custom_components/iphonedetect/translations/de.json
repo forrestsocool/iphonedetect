@@ -8,10 +8,11 @@
     "config": {
         "step": {
             "user": {
-                "description": "Stellen Sie sicher, dass das Gerät eine statische IP hat",
+                "description": "Stellen Sie sicher, dass das Gerät eine gültige MAC-Adresse hat",
                 "data": {
                     "name": "Name",
-                    "ip_address": "IP-Adresse",
+                    "mac_address": "MAC-Adresse",
+                    "ip_address": "IP-Adresse (Optional)",
                     "consider_home": "Als zu Hause betrachten (Sek)",
                     "subnet_check": "Prüfen, ob IP in einem erreichbaren Subnetz liegt"
                 },
@@ -23,7 +24,8 @@
             "reconfigure": {
                 "description": "Konfiguration für {device_name} aktualisieren.",
                 "data": {
-                    "ip_address": "IP-Adresse",
+                    "mac_address": "MAC-Adresse",
+                    "ip_address": "IP-Adresse (Optional)",
                     "subnet_check": "Prüfen, ob IP in einem erreichbaren Subnetz liegt"
                 }
             }
@@ -34,6 +36,8 @@
         },
         "error": {
             "name_not_unique": "Name nicht eindeutig, wählen Sie einen anderen",
+            "mac_already_configured": "MAC-Adresse ist bereits konfiguriert",
+            "mac_invalid": "Keine gültige MAC-Adresse",
             "ip_already_configured": "IP-Adresse wird bereits von einer anderen Entität verwendet",
             "ip_invalid": "Keine gültige IP-Adresse",
             "ip_range": "IP nicht im Bereich der HASS-Subnetze"

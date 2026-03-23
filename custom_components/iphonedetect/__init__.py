@@ -55,10 +55,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up config entries."""
-    _LOGGER.debug("Adding '%s' to tracked devices", entry.options[CONF_IP_ADDRESS])
+    _LOGGER.debug("Adding MAC '%s' to tracked devices", entry.options.get("mac_address", ""))
 
     device = hass.data[DOMAIN][CONF_DEVICES][entry.entry_id] = DeviceData(
-        ip_address=entry.options[CONF_IP_ADDRESS],
+        mac_address=entry.options.get("mac_address", ""),
+        ip_address=entry.options.get(CONF_IP_ADDRESS),
         consider_home=timedelta(seconds=entry.options[CONF_CONSIDER_HOME]),
         title=entry.title,
     )
@@ -83,7 +84,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        _LOGGER.debug("Removing '%s' from tracked devices", entry.options[CONF_IP_ADDRESS])
+        _LOGGER.debug("Removing '%s' from tracked devices", entry.options.get("mac_address", ""))
         hass.data[DOMAIN][CONF_DEVICES].pop(entry.entry_id)
 
     return unload_ok
@@ -110,6 +111,18 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
             data={},
             options=new_options,
             version=2,
+        )
+
+    if config_entry.version == 2:
+        _LOGGER.debug("Migrating to version 3")
+        new_options = config_entry.options.copy()
+        if "mac_address" not in new_options:
+            new_options["mac_address"] = ""
+
+        hass.config_entries.async_update_entry(
+            config_entry,
+            options=new_options,
+            version=3,
         )
 
     return True

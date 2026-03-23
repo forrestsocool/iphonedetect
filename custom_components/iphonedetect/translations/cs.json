@@ -8,10 +8,11 @@
     "config": {
         "step": {
             "user": {
-                "description": "Ujistěte se, že zařízení má pevnou IP adresu.",
+                "description": "Ujistěte se, že zařízení má platnou MAC adresu.",
                 "data": {
                     "name": "Název",
-                    "ip_address": "IP adresa",
+                    "mac_address": "MAC adresa",
+                    "ip_address": "IP adresa (volitelné)",
                     "consider_home": "Interval detekce Je doma (sek.)",
                     "subnet_check": "Zkontrolovat, zda je IP adresa v dosažitelné podsíti"
                 },
@@ -23,7 +24,8 @@
             "reconfigure": {
                 "description": "Aktualizuje nastavení pro {device_name}.",
                 "data": {
-                    "ip_address": "IP adresa",
+                    "mac_address": "MAC adresa",
+                    "ip_address": "IP adresa (volitelné)",
                     "subnet_check": "Zkontrolovat, zda je IP v dosažitelné podsíti"
                 }
             }
@@ -34,6 +36,8 @@
         },
         "error": {
             "name_not_unique": "Název není unikátní, vyberte jiný.",
+            "mac_already_configured": "MAC adresa je již nastavena.",
+            "mac_invalid": "Není platná MAC adresa.",
             "ip_already_configured": "IP adresa je již používána jinou entitou.",
             "ip_invalid": "Není platná IP adresa.",
             "ip_range": "IP adresa není v rozsahu podsítě HASS."

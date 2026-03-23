@@ -1,6 +1,7 @@
 """Config flow for iPhone Device Tracker integration."""
 
 import logging
+import re
 from ipaddress import AddressValueError, IPv4Address, IPv4Network, ip_interface
 from typing import Any
 
@@ -32,10 +33,13 @@ from .const import (
     CONF_OPNSENSE_URL,
     CONF_OPNSENSE_KEY,
     CONF_OPNSENSE_SECRET,
+    CONF_MAC_ADDRESS,
 )
 
 
 _LOGGER = logging.getLogger(__name__)
+
+MAC_REGEX = re.compile(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$")
 
 
 OPTIONS_SCHEMA = vol.Schema(
@@ -47,7 +51,8 @@ OPTIONS_SCHEMA = vol.Schema(
 DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME, description={"suggested_value": "My iPhone"}): str,
-        vol.Required(CONF_IP_ADDRESS, description={"suggested_value": "192.168.1.xx"}): str,
+        vol.Required(CONF_MAC_ADDRESS, description={"suggested_value": "00:11:22:33:44:55"}): str,
+        vol.Optional(CONF_IP_ADDRESS, description={"suggested_value": "192.168.1.xx"}): str,
         **OPTIONS_SCHEMA.schema,
         vol.Optional("subnet_check", default=True): bool,
         vol.Optional(CONF_OPNSENSE_URL): str,
@@ -78,7 +83,8 @@ async def async_get_networks(hass: HomeAssistant) -> list[IPv4Network]:
 async def _validate_input(hass: HomeAssistant, user_input: dict[str, Any]) -> dict[str, str] | None:
     """Try to validate user input"""
     entries = [entry for entry in hass.config_entries.async_entries(DOMAIN)]
-    ip = user_input[CONF_IP_ADDRESS]
+    mac = user_input.get(CONF_MAC_ADDRESS)
+    ip = user_input.get(CONF_IP_ADDRESS)
 
     # Check if name already used for a clearer error
     if user_input.get(CONF_NAME, False):
@@ -87,28 +93,31 @@ async def _validate_input(hass: HomeAssistant, user_input: dict[str, Any]) -> di
         if entry_id in entries_id:
             return {"base": "name_not_unique"}
 
+    if mac and not MAC_REGEX.match(mac):
+        return {"base": "mac_invalid"}
+
+    entries_mac = [entry.options.get(CONF_MAC_ADDRESS) for entry in entries]
+    if mac and mac in entries_mac:
+        return {"base": "mac_already_configured"}
+
     # Check if valid IP address
-    try:
-        IPv4Address(ip)
-    except AddressValueError:
-        return {"base": "ip_invalid"}
+    if ip:
+        try:
+            IPv4Address(ip)
+        except AddressValueError:
+            return {"base": "ip_invalid"}
 
-    # Check if IP address already used for a clearer error
-    entries_ip = [entry.options[CONF_IP_ADDRESS] for entry in entries]
-    if ip in entries_ip:
-        return {"base": "ip_already_configured"}
-
-    # Check if device IP will be seen by ARP
-    if user_input["subnet_check"]:
-        subnets = await async_get_networks(hass)
-        if not any(IPv4Address(ip) in subnet for subnet in subnets):
-            return {"base": "ip_range"}
+        # Check if device IP will be seen by ARP
+        if user_input.get("subnet_check", True):
+            subnets = await async_get_networks(hass)
+            if not any(IPv4Address(ip) in subnet for subnet in subnets):
+                return {"base": "ip_range"}
 
 
 class IphoneDetectFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore
     """Handle a config flow."""
 
-    VERSION = 2
+    VERSION = 3
 
     @staticmethod
     @callback
@@ -133,7 +142,8 @@ class IphoneDetectFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore
                     title=user_input[CONF_NAME],
                     data={},
                     options={
-                        CONF_IP_ADDRESS: user_input[CONF_IP_ADDRESS],
+                        CONF_MAC_ADDRESS: user_input[CONF_MAC_ADDRESS].lower(),
+                        CONF_IP_ADDRESS: user_input.get(CONF_IP_ADDRESS),
                         CONF_CONSIDER_HOME: user_input[CONF_CONSIDER_HOME],
                         CONF_OPNSENSE_URL: user_input.get(CONF_OPNSENSE_URL),
                         CONF_OPNSENSE_KEY: user_input.get(CONF_OPNSENSE_KEY),
@@ -161,7 +171,8 @@ class IphoneDetectFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore
             title=import_config[CONF_NAME],
             data={},
             options={
-                CONF_IP_ADDRESS: import_config[CONF_IP_ADDRESS],
+                CONF_MAC_ADDRESS: import_config.get(CONF_MAC_ADDRESS, "").lower(),
+                CONF_IP_ADDRESS: import_config.get(CONF_IP_ADDRESS),
                 CONF_CONSIDER_HOME: import_config[CONF_CONSIDER_HOME],
                 CONF_OPNSENSE_URL: import_config.get(CONF_OPNSENSE_URL),
                 CONF_OPNSENSE_KEY: import_config.get(CONF_OPNSENSE_KEY),
@@ -179,7 +190,10 @@ class IphoneDetectFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore
             if not errors:
                 await self.async_set_unique_id(entry.unique_id)
                 self._abort_if_unique_id_mismatch()
-                new_options = entry.options | {CONF_IP_ADDRESS: user_input[CONF_IP_ADDRESS]}
+                new_options = entry.options | {
+                    CONF_MAC_ADDRESS: user_input[CONF_MAC_ADDRESS].lower(),
+                    CONF_IP_ADDRESS: user_input.get(CONF_IP_ADDRESS)
+                }
 
                 return self.async_update_reload_and_abort(
                     entry,
@@ -189,7 +203,8 @@ class IphoneDetectFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=vol.Schema({
-                vol.Required(CONF_IP_ADDRESS, default=entry.options[CONF_IP_ADDRESS]): str,
+                vol.Required(CONF_MAC_ADDRESS, default=entry.options.get(CONF_MAC_ADDRESS, "")): str,
+                vol.Optional(CONF_IP_ADDRESS, default=entry.options.get(CONF_IP_ADDRESS, "")): str,
                 vol.Optional("subnet_check", default=True): bool,
                 vol.Optional(CONF_OPNSENSE_URL, default=entry.options.get(CONF_OPNSENSE_URL)): str,
                 vol.Optional(CONF_OPNSENSE_KEY, default=entry.options.get(CONF_OPNSENSE_KEY)): str,

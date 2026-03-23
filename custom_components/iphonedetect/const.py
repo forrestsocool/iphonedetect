@@ -11,3 +11,4 @@ CONF_OPNSENSE_URL = "opnsense_url"
 CONF_OPNSENSE_KEY = "opnsense_key"
 CONF_OPNSENSE_SECRET = "opnsense_secret"
 
+CONF_MAC_ADDRESS = "mac_address"

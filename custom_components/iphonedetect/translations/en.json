@@ -8,10 +8,11 @@
     "config": {
         "step": {
             "user": {
-                "description": "Ensure the device has a static IP",
+                "description": "Ensure the device has a valid MAC address",
                 "data": {
                     "name": "Name",
-                    "ip_address": "IP address",
+                    "mac_address": "MAC address",
+                    "ip_address": "IP address (Optional)",
                     "consider_home": "Consider Home interval (sec)",
                     "subnet_check": "Check if IP is in a reachable subnet"
                 },
@@ -23,7 +24,8 @@
             "reconfigure": {
                 "description": "Update configuration for {device_name}.",
                 "data": {
-                    "ip_address": "IP address",
+                    "mac_address": "MAC address",
+                    "ip_address": "IP address (Optional)",
                     "subnet_check": "Check if IP is in a reachable subnet"
                 }
             }
@@ -34,6 +36,8 @@
         },
         "error": {
             "name_not_unique": "Name not unique, pick another",
+            "mac_already_configured": "MAC address already configured",
+            "mac_invalid": "Not a valid MAC address",
             "ip_already_configured": "IP address already in use by other entity",
             "ip_invalid": "Not a valid IP address",
             "ip_range": "IP not in range of HASS subnets"
