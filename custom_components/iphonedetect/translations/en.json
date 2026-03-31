@@ -12,6 +12,8 @@
                 "data": {
                     "name": "Name",
                     "mac_address": "MAC address",
+                    "mac_address_2": "MAC address 2 (Optional)",
+                    "mac_address_3": "MAC address 3 (Optional)",
                     "ip_address": "IP address (Optional)",
                     "consider_home": "Consider Home interval (sec)",
                     "subnet_check": "Check if IP is in a reachable subnet"
@@ -25,6 +27,8 @@
                 "description": "Update configuration for {device_name}.",
                 "data": {
                     "mac_address": "MAC address",
+                    "mac_address_2": "MAC address 2 (Optional)",
+                    "mac_address_3": "MAC address 3 (Optional)",
                     "ip_address": "IP address (Optional)",
                     "subnet_check": "Check if IP is in a reachable subnet"
                 }
@@ -38,6 +42,8 @@
             "name_not_unique": "Name not unique, pick another",
             "mac_already_configured": "MAC address already configured",
             "mac_invalid": "Not a valid MAC address",
+            "mac2_invalid": "MAC address 2 is not valid",
+            "mac3_invalid": "MAC address 3 is not valid",
             "ip_already_configured": "IP address already in use by other entity",
             "ip_invalid": "Not a valid IP address",
             "ip_range": "IP not in range of HASS subnets"

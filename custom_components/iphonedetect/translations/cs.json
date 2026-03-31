@@ -12,6 +12,8 @@
                 "data": {
                     "name": "Název",
                     "mac_address": "MAC adresa",
+                    "mac_address_2": "MAC adresa 2 (volitelné)",
+                    "mac_address_3": "MAC adresa 3 (volitelné)",
                     "ip_address": "IP adresa (volitelné)",
                     "consider_home": "Interval detekce Je doma (sek.)",
                     "subnet_check": "Zkontrolovat, zda je IP adresa v dosažitelné podsíti"
@@ -25,6 +27,8 @@
                 "description": "Aktualizuje nastavení pro {device_name}.",
                 "data": {
                     "mac_address": "MAC adresa",
+                    "mac_address_2": "MAC adresa 2 (volitelné)",
+                    "mac_address_3": "MAC adresa 3 (volitelné)",
                     "ip_address": "IP adresa (volitelné)",
                     "subnet_check": "Zkontrolovat, zda je IP v dosažitelné podsíti"
                 }
@@ -38,6 +42,8 @@
             "name_not_unique": "Název není unikátní, vyberte jiný.",
             "mac_already_configured": "MAC adresa je již nastavena.",
             "mac_invalid": "Není platná MAC adresa.",
+            "mac2_invalid": "MAC adresa 2 není platná.",
+            "mac3_invalid": "MAC adresa 3 není platná.",
             "ip_already_configured": "IP adresa je již používána jinou entitou.",
             "ip_invalid": "Není platná IP adresa.",
             "ip_range": "IP adresa není v rozsahu podsítě HASS."

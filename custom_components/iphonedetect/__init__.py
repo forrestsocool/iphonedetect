@@ -13,7 +13,7 @@ from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_time_interval
 
-from .const import DOMAIN, PROBE_INTERVAL
+from .const import DOMAIN, PROBE_INTERVAL, CONF_MAC_ADDRESS, CONF_MAC_ADDRESS_2, CONF_MAC_ADDRESS_3
 from .coordinator import IphoneDetectUpdateCoordinator
 from .scanner import (
     DeviceData,
@@ -55,10 +55,19 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up config entries."""
-    _LOGGER.debug("Adding MAC '%s' to tracked devices", entry.options.get("mac_address", ""))
+    # Build list of MAC addresses (primary + optional backups), filtering out empty strings
+    mac_list = [
+        m.lower() for m in [
+            entry.options.get(CONF_MAC_ADDRESS, ""),
+            entry.options.get(CONF_MAC_ADDRESS_2, ""),
+            entry.options.get(CONF_MAC_ADDRESS_3, ""),
+        ] if m
+    ]
+
+    _LOGGER.debug("Adding MACs %s to tracked device '%s'", mac_list, entry.title)
 
     device = hass.data[DOMAIN][CONF_DEVICES][entry.entry_id] = DeviceData(
-        mac_address=entry.options.get("mac_address", ""),
+        mac_addresses=mac_list,
         ip_address=entry.options.get(CONF_IP_ADDRESS),
         consider_home=timedelta(seconds=entry.options[CONF_CONSIDER_HOME]),
         title=entry.title,
@@ -84,7 +93,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        _LOGGER.debug("Removing '%s' from tracked devices", entry.options.get("mac_address", ""))
+        _LOGGER.debug("Removing '%s' from tracked devices", entry.title)
         hass.data[DOMAIN][CONF_DEVICES].pop(entry.entry_id)
 
     return unload_ok
@@ -123,6 +132,18 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
             config_entry,
             options=new_options,
             version=3,
+        )
+
+    if config_entry.version == 3:
+        _LOGGER.debug("Migrating to version 4")
+        new_options = config_entry.options.copy()
+        new_options.setdefault(CONF_MAC_ADDRESS_2, "")
+        new_options.setdefault(CONF_MAC_ADDRESS_3, "")
+
+        hass.config_entries.async_update_entry(
+            config_entry,
+            options=new_options,
+            version=4,
         )
 
     return True

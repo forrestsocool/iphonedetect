@@ -30,7 +30,7 @@ CMD_ARP = "arp -ne"
 
 @dataclass(slots=True, kw_only=True)
 class DeviceData:
-    mac_address: str
+    mac_addresses: list[str]
     ip_address: str | None
     consider_home: timedelta
     title: str
@@ -159,17 +159,26 @@ async def async_update_devices(hass: HomeAssistant, scanner: Scanner, devices: d
     _LOGGER.debug("ARP response has %d records", len(arp_records))
 
     # Only keep reachable tracked devices
-    matched_macs = [device.mac_address for device in devices.values() if device.mac_address.lower() in arp_records]
+    matched_macs = [
+        mac for device in devices.values()
+        for mac in device.mac_addresses
+        if mac.lower() in arp_records
+    ]
     _LOGGER.debug("Matched %d tracked devices: %s", len(matched_macs), matched_macs)
 
     # Update reachable devices
     for device in devices.values():
-        target_mac = device.mac_address.lower()
-        device._reachable = target_mac in arp_records
+        matched_mac = None
+        for mac in device.mac_addresses:
+            if mac.lower() in arp_records:
+                matched_mac = mac.lower()
+                break
+
+        device._reachable = matched_mac is not None
         if device._reachable:
             device._last_seen = dt_util.utcnow()
             # Update last known IP so we ping the correct one next time
-            device.ip_address = arp_records[target_mac]
+            device.ip_address = arp_records[matched_mac]
 
 
 class ScannerOpnsense:
